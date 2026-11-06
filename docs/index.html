@@ -40,15 +40,22 @@
   h1 { font-size: clamp(30px, 7vw, 40px); letter-spacing: .14em; font-weight: 900; color: var(--ink); }
   h1 b { color: var(--lamp); text-shadow: 0 0 26px rgba(233,200,124,.35); }
   .sub { margin-top: 12px; color: var(--ink-soft); font-size: 13.5px; letter-spacing: .08em; }
-  .books { display: flex; gap: 9px; margin: 30px 0 4px; overflow-x: auto; padding: 4px 2px 12px; scrollbar-width: thin; }
-  .books .blabel { flex: 0 0 auto; align-self: center; font-size: 12.5px; color: var(--ink-faint); letter-spacing: .22em; writing-mode: vertical-rl; }
-  .books a {
-    flex: 0 0 auto; font-size: 15px; padding: 7px 18px; border-radius: 999px; text-decoration: none;
-    color: var(--ink-soft); border: 1px solid var(--line); background: var(--night-2);
+  .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin: 30px 0 8px; }
+  .bkcard {
+    display: block; text-decoration: none; background: var(--night-2); border: 1px solid var(--line);
+    border-radius: 13px; padding: 18px 16px 15px; position: relative;
+    transition: border-color .2s, transform .2s;
   }
-  .books a.on { background: var(--lamp); color: var(--night); border-color: var(--lamp); font-weight: 700; box-shadow: 0 0 22px rgba(233,200,124,.25); }
-  .books a.xchip::after { content: '⇄'; color: var(--lamp-deep); font-size: 12px; margin-left: 4px; }
-  .books a.on.xchip::after { color: var(--night); }
+  .bkcard:hover { border-color: rgba(233,200,124,.45); transform: translateY(-2px); }
+  .bkcard.xbk { background: linear-gradient(175deg, rgba(233,200,124,.09), var(--night-2) 55%); }
+  .bkcard .bkname { font-size: 18px; font-weight: 900; color: var(--ink); letter-spacing: .04em; }
+  .bkcard .bkauthor { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+  .bkcard .bkmeta { font-size: 11.5px; color: var(--ink-faint); margin-top: 12px; font-family: Georgia, serif; }
+  .bkcard .bkx { position: absolute; right: 12px; top: 12px; font-size: 11px; color: var(--lamp); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+  .shelf-note { font-size: 12px; color: var(--ink-faint); margin: 4px 0 0; letter-spacing: .05em; }
+  .backbar { display: flex; align-items: baseline; gap: 14px; margin: 26px 0 2px; }
+  .backbar a { color: var(--lamp-deep); text-decoration: none; font-size: 14px; letter-spacing: .05em; }
+  .backbar .bt { font-size: 24px; font-weight: 900; color: var(--ink); letter-spacing: .06em; }
   .view { display: none; }
   .view.active { display: block; animation: fadein .35s ease; }
   @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -139,8 +146,8 @@
   <header>
     <h1>英雄<b>所见</b></h1>
     <div class="sub">万人划过的句子,英雄所见略同 · 译本各异,所见亦有不同</div>
-    <nav class="books" id="booknav"><span class="blabel">书架</span></nav>
   </header>
+  <div class="view" id="view-shelf"></div>
   <div id="views"></div>
   <footer>
     <p>数据来自微信读书公开热门划线(2026-10 拉取),每条引文有截断,完整语境请读原书。</p>
@@ -2488,7 +2495,7 @@ function renderBook(m) {
     <div id="ed-meta"></div>
     <div id="tab-hot"></div><div id="tab-seq" style="display:none"></div>${hasX ? '<div id="tab-x" style="display:none"></div>' : ''}`;
   const root = document.getElementById('view-' + m.id);
-  root.innerHTML = h;
+  root.innerHTML = `<div class="backbar"><a href="#shelf">⇦ 书架</a><span class="bt">${esc(m.name)}</span></div>` + h;
   root.querySelector('#ed-meta').outerHTML = m.editions.map((e,i) => `<div class="meta-card" data-mc="${i}" ${i?'style="display:none"':''}>
       <b>${esc(e.label)}</b> · 全池 ${e.pool} 条${e.rating ? ' · ' + esc(e.rating) : ''} ·
       <a href="${m.link}" target="_blank" rel="noopener">去微信读书读原书</a></div>`).join('');
@@ -2527,28 +2534,53 @@ function renderBook(m) {
   });
 }
 
-const nav = $('#booknav'), views = $('#views');
+const views = $('#views');
 BOOKS.forEach(b => {
-  const a = document.createElement('a');
-  a.href = '#' + b.id; a.id = 'nav-' + b.id; a.textContent = b.name;
-  if (b.x_on && b.x.length) a.className = 'xchip';
-  nav.appendChild(a);
   const v = document.createElement('div');
   v.className = 'view'; v.id = 'view-' + b.id;
   views.appendChild(v);
   renderBook(b);
 });
 
-function applyBook(id) {
-  const bk = bookById(id);
-  document.body.dataset.book = bk.id;
-  BOOKS.forEach(b => document.getElementById('view-' + b.id).classList.toggle('active', b.id === bk.id));
-  BOOKS.forEach(b => document.getElementById('nav-' + b.id).classList.toggle('on', b.id === bk.id));
-  document.title = '英雄所见 · 《' + bk.name + '》万人划线榜';
-  track('book_view', { book: bk.id });
+function topN(b) { return Math.max(...b.editions.map(e => e.items.length ? e.items[0].n : 0)); }
+function renderShelf() {
+  const sorted = [...BOOKS].sort((a, b) => topN(b) - topN(a));
+  const shelf = document.getElementById('view-shelf');
+  shelf.innerHTML = `<div class="shelf">` + sorted.map(b => `
+    <a class="bkcard ${b.x_on && b.x.length ? 'xbk' : ''}" href="#${b.id}">
+      ${b.x_on && b.x.length ? '<span class="bkx">⇄ 对照</span>' : ''}
+      <div class="bkname">${esc(b.name)}</div>
+      <div class="bkauthor">${esc(b.author)}</div>
+      <div class="bkmeta">${b.editions.length > 1 ? b.editions.length + ' 个译本 · ' : ''}${b.editions.reduce((s,e)=>s+e.items.length,0)} 条 · 最热 ${fmtN(topN(b))} 人</div>
+    </a>`).join('') + `</div>
+    <p class="shelf-note">按最热句子的人数排序 · 带书脊与「⇄ 对照」标记的书可看多译本异文</p>`;
+}
+
+function applyView(id) {
+  if (!BOOKS.find(b => b.id === id)) id = 'shelf';
+  document.getElementById('view-shelf').classList.toggle('active', id === 'shelf');
+  BOOKS.forEach(b => document.getElementById('view-' + b.id).classList.toggle('active', b.id === id));
+  if (id === 'shelf') {
+    document.body.dataset.book = 'shelf';
+    document.title = '英雄所见 · 万人划过的句子';
+    track('shelf_view', {});
+  } else {
+    const bk = bookById(id);
+    document.body.dataset.book = bk.id;
+    document.title = '英雄所见 · 《' + bk.name + '》万人划线榜';
+    track('book_view', { book: bk.id });
+  }
 }
 const shareSite = () => {
-  const bk = bookById(document.body.dataset.book);
+  const id = document.body.dataset.book;
+  if (id === 'shelf') {
+    const txt = '英雄所见｜万人划过的句子 · 16 本藏书热度榜与译本对照 ' + location.origin + location.pathname;
+    if (navigator.share) { navigator.share({ title: document.title, text: txt, url: location.href }).catch(()=>{}); }
+    else { navigator.clipboard.writeText(txt).then(() => alert('已复制分享文案')); }
+    track('share_click', { book: 'shelf' });
+    return;
+  }
+  const bk = bookById(id);
   const txt = '英雄所见｜《' + bk.name + '》万人划过的句子' + (bk.x_on ? ' + 译本对照' : '') + ' ' + location.origin + location.pathname + '#' + bk.id;
   if (navigator.share) { navigator.share({ title: document.title, text: txt, url: location.href }).catch(()=>{}); }
   else { navigator.clipboard.writeText(txt).then(() => alert('已复制分享文案')); }
@@ -2661,8 +2693,9 @@ function track(ev, props) {
   } catch (e) {}
 }
 
-applyBook(location.hash.replace('#', '') || 'lp');
-window.addEventListener('hashchange', () => applyBook(location.hash.replace('#', '') || 'lp'));
+renderShelf();
+applyView(location.hash.replace('#', '') || 'shelf');
+window.addEventListener('hashchange', () => applyView(location.hash.replace('#', '') || 'shelf'));
 track('page_view', { book: document.body.dataset.book });
 </script>
 </body>
