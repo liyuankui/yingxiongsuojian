@@ -2675,10 +2675,11 @@ function drawCard(bk, item) {
   g.addColorStop(0, T.glow); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
-  ctx.fillStyle = T.title; ctx.font = '900 40px ' + SERIF;
-  ctx.fillText('英雄所见', W/2, 118);
+  const ed = bk.editions[0].label.split(' · ')[0];
+  ctx.fillStyle = T.title; ctx.font = '900 44px ' + SERIF;
+  ctx.fillText('《' + bk.name + '》', W/2, 116);
   ctx.fillStyle = T.sub; ctx.font = '22px ' + SERIF;
-  ctx.fillText('万人划过的句子 · ' + bk.name, W/2, 160);
+  ctx.fillText(bk.author.split(' · ')[0] + (bk.author.includes('译') ? '' : ' · ' + ed + ' 译'), W/2, 158);
   /* 大引号装裱 */
   ctx.fillStyle = T.cnt; ctx.font = '900 130px ' + SERIF; ctx.globalAlpha = .5;
   ctx.fillText('\u201c', 78, 330); ctx.globalAlpha = 1;
@@ -2701,8 +2702,7 @@ function drawCard(bk, item) {
   ctx.fillText(fmtN(item.n) + ' 人划过', W/2, y0 + 44);
   /* 落款(题跋) */
   ctx.fillStyle = T.meta; ctx.font = '21px ' + SERIF;
-  const ed = bk.editions[0].label.split(' · ')[0];
-  ctx.fillText('\u2014 ' + bk.name + ' · ' + ed + ' 译' + (item.c ? ' · ' + item.c : '') + ' \u2014', W/2, y0 + 88);
+  ctx.fillText('\u2014 ' + (item.c ? item.c + ' · ' : '') + '万人划过的句子 \u2014', W/2, y0 + 88);
   /* 二维码 + 说明行 */
   const url = 'https://liyuankui.github.io/yingxiongsuojian/#' + bk.id;
   try {
