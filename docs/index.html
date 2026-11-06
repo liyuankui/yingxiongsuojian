@@ -141,6 +141,13 @@
     border: 1px solid var(--line); background: var(--night-2); color: var(--ink);
   }
   .dbtns button.pri { background: var(--lamp); border-color: var(--lamp); color: var(--night); font-weight: 700; }
+  .dopts { display: flex; gap: 8px; align-items: center; margin: 2px 0 12px; }
+  .dopt-label { font-size: 12px; color: var(--ink-faint); margin-right: 2px; }
+  .fopt {
+    font-family: inherit; font-size: 13px; padding: 4px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: none; color: var(--ink-soft);
+  }
+  .fopt.on { background: var(--lamp); border-color: var(--lamp); color: var(--night); font-weight: 700; }
   .dclose { position: absolute; right: 16px; top: 16px; background: none; border: none; color: var(--ink-faint); font-size: 20px; cursor: pointer; }
   .themebtn {
     position: fixed; top: 16px; right: 16px; z-index: 9; width: 42px; height: 42px;
@@ -178,6 +185,10 @@
   <button class="dclose" id="dclose">✕</button>
   <h2>吉光片羽</h2>
   <div class="dsub">把这一句做成书灯下的卡片 · <span id="dbook"></span></div>
+  <div class="dopts"><span class="dopt-label">字体</span>
+    <button class="fopt on" data-font="serif">宋</button>
+    <button class="fopt" data-font="kai">楷</button>
+  </div>
   <div class="cardbox"><canvas id="jgpyCanvas" width="750" height="1000"></canvas></div>
   <div class="dbtns">
     <button id="dlShare">系统分享</button>
@@ -2497,6 +2508,7 @@ const THEMES = {
   dark:  { bg:'#0c1424', glow:'rgba(233,200,124,.30)', title:'#e9c87c', sub:'rgba(240,232,216,.55)', ink:'#f0e8d8', cnt:'#e9c87c', meta:'rgba(240,232,216,.5)', foot:'rgba(240,232,216,.4)', qrPad:'#f0e8d8', qrDot:'#0c1424', name:'夜航书灯' },
 };
 let THEME = 'light';
+let CARD_FONT = 'serif';
 function applyTheme(t) {
   THEME = t;
   document.documentElement.dataset.theme = t;
@@ -2621,6 +2633,22 @@ const shareSite = () => {
 };
 
 /* ===== 吉光片羽:canvas 卡片 ===== */
+function wrapCenter(ctx, text, cx, y, maxW, lineH, maxLines) {
+  const lines = []; let line = '';
+  for (const ch of text) {
+    if (ctx.measureText(line + ch).width > maxW) { lines.push(line); line = ch; if (lines.length === maxLines) break; }
+    else line += ch;
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  if (text.length > lines.join('').length) {
+    const last = lines[lines.length-1] || '';
+    if (lines.length === maxLines && last) lines[lines.length-1] = last.slice(0, Math.max(2, last.length - 1)) + '……';
+  }
+  const prevAlign = ctx.textAlign; ctx.textAlign = 'center';
+  lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineH));
+  ctx.textAlign = prevAlign;
+  return y + lines.length * lineH;
+}
 function wrapText(ctx, text, x, y, maxW, lineH, maxLines) {
   const lines = []; let line = '';
   for (const ch of text) {
@@ -2639,40 +2667,60 @@ function drawCard(bk, item) {
   const cv = $('#jgpyCanvas'), ctx = cv.getContext('2d');
   const W = 750, H = 1000;
   const T = THEMES[THEME] || THEMES.light;
+  const SERIF = '"Songti SC","Noto Serif SC",serif';
+  const FONT = CARD_FONT === 'kai' ? '"Kaiti SC","STKaiti","KaiTi",serif' : SERIF;
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
   const g = ctx.createRadialGradient(W/2, 60, 20, W/2, 60, 480);
   g.addColorStop(0, T.glow); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
-  ctx.fillStyle = T.title; ctx.font = '900 40px "Songti SC","Noto Serif SC",serif';
-  ctx.fillText('英雄所见', W/2, 120);
-  ctx.fillStyle = T.sub; ctx.font = '22px "Songti SC",serif';
-  ctx.fillText('万人划过的句子 · ' + bk.name, W/2, 162);
-  ctx.strokeStyle = T.cnt + '55'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(W/2 - 130, 196); ctx.lineTo(W/2 + 130, 196); ctx.stroke();
-  ctx.textAlign = 'left';
-  ctx.fillStyle = T.ink; ctx.font = '42px "Songti SC","Noto Serif SC",serif';
+  ctx.fillStyle = T.title; ctx.font = '900 40px ' + SERIF;
+  ctx.fillText('英雄所见', W/2, 118);
+  ctx.fillStyle = T.sub; ctx.font = '22px ' + SERIF;
+  ctx.fillText('万人划过的句子 · ' + bk.name, W/2, 160);
+  /* 大引号装裱 */
+  ctx.fillStyle = T.cnt; ctx.font = '900 130px ' + SERIF; ctx.globalAlpha = .5;
+  ctx.fillText('\u201c', 78, 330); ctx.globalAlpha = 1;
+  /* 引文:超长自动降字号 */
   const body = item.t.length > 126 ? item.t.slice(0, 124) + '……' : item.t;
-  const used = wrapText(ctx, body, 64, 300, W - 128, 66, 7);
-  ctx.fillStyle = T.cnt; ctx.font = '26px Georgia,serif';
-  ctx.fillText(fmtN(item.n) + ' 人划过', 64, used + 46);
-  ctx.fillStyle = T.meta; ctx.font = '21px "Songti SC",serif';
+  const fs = body.length <= 40 ? 46 : body.length <= 80 ? 38 : 33;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = T.ink; ctx.font = fs + 'px ' + FONT;
+  const used = wrapCenter(ctx, body, W/2, 330, W - 170, fs * 1.62, 7);
+  /* 灯芯刻度:热度可视化(10 格,按万人对数亮格) */
+  const kW = Math.max(...bk.editions.map(e => e.items.length ? e.items[0].n : 0));
+  const lit = Math.max(2, Math.min(10, Math.round(Math.log10(Math.max(item.n, 10)) / Math.log10(Math.max(kW, 100)) * 10)));
+  const tickW = 150, x0 = W/2 - tickW/2, y0 = used + 44;
+  for (let i = 0; i < 10; i++) {
+    ctx.fillStyle = i < lit ? T.cnt : T.cnt + '30';
+    const tw = i < lit ? 10 : 8;
+    ctx.fillRect(x0 + i * (tickW / 10), y0, tw, 3);
+  }
+  ctx.fillStyle = T.cnt; ctx.font = '26px Georgia,serif'; ctx.textAlign = 'center';
+  ctx.fillText(fmtN(item.n) + ' 人划过', W/2, y0 + 44);
+  /* 落款(题跋) */
+  ctx.fillStyle = T.meta; ctx.font = '21px ' + SERIF;
   const ed = bk.editions[0].label.split(' · ')[0];
-  ctx.fillText(bk.name + ' · ' + ed + ' 译' + (item.c ? ' · ' + item.c : ''), 64, used + 90);
+  ctx.fillText('\u2014 ' + bk.name + ' · ' + ed + ' 译' + (item.c ? ' · ' + item.c : '') + ' \u2014', W/2, y0 + 88);
+  /* 二维码 + 说明行 */
   const url = 'https://liyuankui.github.io/yingxiongsuojian/#' + bk.id;
   try {
     const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-    const n = qr.getModuleCount(), cell = 5.4, pad = 2, size = n * cell + pad * 2;
-    const qx = W - 64 - size, qy = H - 84 - size;
+    const n = qr.getModuleCount(), cell = 5, pad = 2, size = n * cell + pad * 2;
+    const qx = W - 64 - size, qy = H - 96 - size;
     ctx.fillStyle = T.qrPad; ctx.fillRect(qx - 10, qy - 10, size + 20, size + 20);
     ctx.fillStyle = T.qrDot;
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
       if (qr.isDark(r, c)) ctx.fillRect(qx + pad + c * cell, qy + pad + r * cell, cell, cell);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = T.meta; ctx.font = '18px ' + SERIF;
+    ctx.fillText('扫码看万人', qx - 34, qy + size * .38);
+    ctx.fillText('划过的句子', qx - 34, qy + size * .38 + 28);
   } catch (e) {}
-  ctx.textAlign = 'right';
-  ctx.fillStyle = T.foot; ctx.font = '20px "Songti SC",serif';
-  ctx.fillText('yingxiongsuojian', W - 64, H - 52);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = T.foot; ctx.font = '20px ' + SERIF;
+  ctx.fillText('yingxiongsuojian · 英雄所见', W/2 - 40, H - 52);
 }
 function openFeather(btn) {
   const bk = bookById(document.body.dataset.book);
@@ -2683,6 +2731,11 @@ function openFeather(btn) {
   track('card_generate', { book: bk.id });
 }
 function closeDrawer() { $('#drawer').classList.remove('show'); $('#dmask').classList.remove('show'); }
+document.querySelectorAll('.fopt').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.fopt').forEach(x => x.classList.remove('on')); b.classList.add('on');
+  CARD_FONT = b.dataset.font;
+  if (CURRENT.book && CURRENT.item) drawCard(CURRENT.book, CURRENT.item);
+});
 document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('feather')) openFeather(e.target); });
 $('#dmask').onclick = closeDrawer; $('#dclose').onclick = closeDrawer;
 $('#dlSave').onclick = () => {
