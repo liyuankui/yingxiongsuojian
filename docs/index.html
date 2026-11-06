@@ -17,11 +17,21 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230c1424'/><circle cx='50' cy='42' r='26' fill='%23e9c87c' opacity='.22'/><circle cx='50' cy='46' r='16' fill='%23e9c87c'/><rect x='44' y='62' width='12' height='18' rx='3' fill='%23c8a45a'/></svg>">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
+  :root {  /* 纸窗晨光(默认亮) */
+    --night: #f5efe3; --night-2: #fdf9ef; --night-3: #f0e8d8;
+    --lamp: #a63c2f; --lamp-deep: #8a2f24;
+    --ink: #2b2620; --ink-soft: rgba(43,38,32,.62); --ink-faint: rgba(43,38,32,.42);
+    --line: rgba(166,60,47,.18);
+    --glow-a: rgba(216,166,74,.14); --glow-b: rgba(245,239,227,.9);
+    --h1glow: none;
+  }
+  html[data-theme="dark"] {  /* 夜航书灯 */
     --night: #0c1424; --night-2: #111d33; --night-3: #16243d;
     --lamp: #e9c87c; --lamp-deep: #c8a45a;
     --ink: #f0e8d8; --ink-soft: rgba(240,232,216,.62); --ink-faint: rgba(240,232,216,.4);
     --line: rgba(233,200,124,.16);
+    --glow-a: rgba(233,200,124,.16); --glow-b: rgba(12,20,36,.9);
+    --h1glow: 0 0 26px rgba(233,200,124,.35);
   }
   html { line-break: strict; }
   body {
@@ -32,13 +42,13 @@
   .lampglow {
     position: fixed; inset: 0; pointer-events: none; z-index: 0;
     background:
-      radial-gradient(58% 34% at 50% -6%, rgba(233,200,124,.16), transparent 70%),
-      radial-gradient(90% 60% at 50% 108%, rgba(12,20,36,.9), transparent 60%);
+      radial-gradient(58% 34% at 50% -6%, var(--glow-a), transparent 70%),
+      radial-gradient(90% 60% at 50% 108%, var(--glow-b), transparent 60%);
   }
   .wrap { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 20px 90px; }
   header { text-align: center; padding: 64px 0 4px; }
   h1 { font-size: clamp(30px, 7vw, 40px); letter-spacing: .14em; font-weight: 900; color: var(--ink); }
-  h1 b { color: var(--lamp); text-shadow: 0 0 26px rgba(233,200,124,.35); }
+  h1 b { color: var(--lamp); text-shadow: var(--h1glow); }
   .sub { margin-top: 12px; color: var(--ink-soft); font-size: 13.5px; letter-spacing: .08em; }
   .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin: 30px 0 8px; }
   .bkcard {
@@ -46,8 +56,8 @@
     border-radius: 13px; padding: 18px 16px 15px; position: relative;
     transition: border-color .2s, transform .2s;
   }
-  .bkcard:hover { border-color: rgba(233,200,124,.45); transform: translateY(-2px); }
-  .bkcard.xbk { background: linear-gradient(175deg, rgba(233,200,124,.09), var(--night-2) 55%); }
+  .bkcard:hover { border-color: var(--lamp); transform: translateY(-2px); }
+  .bkcard.xbk { background: linear-gradient(175deg, var(--glow-a), var(--night-2) 60%); }
   .bkcard .bkname { font-size: 18px; font-weight: 900; color: var(--ink); letter-spacing: .04em; }
   .bkcard .bkauthor { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
   .bkcard .bkmeta { font-size: 11.5px; color: var(--ink-faint); margin-top: 12px; font-family: Georgia, serif; }
@@ -83,7 +93,7 @@
     border-radius: 13px; padding: 15px 16px 13px 60px; margin-bottom: 11px; position: relative;
     transition: border-color .2s;
   }
-  ol.rank > li:hover { border-color: rgba(233,200,124,.4); }
+  ol.rank > li:hover { border-color: var(--lamp); }
   ol.rank > li::before {
     content: counter(rk); position: absolute; left: 17px; top: 16px;
     font-size: 15px; font-weight: 900; color: var(--lamp-deep); min-width: 30px;
@@ -112,7 +122,7 @@
   .xrow .xt.absent { color: var(--ink-faint); font-size: 13px; background: none; border-style: dashed; }
   footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-faint); }
   footer a { color: var(--lamp-deep); text-decoration: none; }
-  .drawer-mask { position: fixed; inset: 0; background: rgba(5,9,18,.72); z-index: 40; display: none; }
+  .drawer-mask { position: fixed; inset: 0; background: rgba(20,16,10,.45); z-index: 40; display: none; }
   .drawer-mask.show { display: block; }
   .drawer {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; background: var(--night-3);
@@ -123,8 +133,8 @@
   .drawer.show { transform: none; }
   .drawer h2 { font-size: 17px; color: var(--lamp); letter-spacing: .1em; margin-bottom: 4px; }
   .drawer .dsub { font-size: 12.5px; color: var(--ink-faint); margin-bottom: 16px; }
-  .cardbox { display: flex; justify-content: center; background: rgba(233,200,124,.05); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-  #jgpyCanvas { width: min(300px, 72vw); height: auto; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+  .cardbox { display: flex; justify-content: center; background: var(--line); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  #jgpyCanvas { width: min(300px, 72vw); height: auto; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.28); }
   .dbtns { display: flex; gap: 12px; margin-top: 16px; justify-content: center; }
   .dbtns button {
     font-family: inherit; font-size: 14.5px; padding: 11px 26px; border-radius: 999px; cursor: pointer;
@@ -132,11 +142,16 @@
   }
   .dbtns button.pri { background: var(--lamp); border-color: var(--lamp); color: var(--night); font-weight: 700; }
   .dclose { position: absolute; right: 16px; top: 16px; background: none; border: none; color: var(--ink-faint); font-size: 20px; cursor: pointer; }
+  .themebtn {
+    position: fixed; top: 16px; right: 16px; z-index: 9; width: 42px; height: 42px;
+    border-radius: 50%; border: 1px solid var(--line); background: var(--night-2);
+    color: var(--lamp); font-size: 17px; cursor: pointer; font-family: inherit;
+  }
   .share { position: fixed; right: 18px; bottom: 18px; z-index: 9; }
   .share button {
     font-family: inherit; width: 46px; height: 46px; border-radius: 50%; border: none;
     background: var(--lamp); color: var(--night); font-size: 13px; cursor: pointer; font-weight: 700;
-    box-shadow: 0 4px 20px rgba(233,200,124,.35);
+    box-shadow: 0 4px 16px rgba(166,60,47,.28);
   }
 </style>
 </head>
@@ -170,6 +185,7 @@
   </div>
 </div>
 
+<button class="themebtn" id="themebtn" onclick="toggleTheme()" title="日 / 夜">☾</button>
 <div class="share"><button onclick="shareSite()">分享</button></div>
 
 <script>
@@ -2475,6 +2491,23 @@ var qrcode = function() {
 }));
 </script>
 <script>
+/* ===== theme ===== */
+const THEMES = {
+  light: { bg:'#f5efe3', glow:'rgba(216,166,74,.20)', title:'#a63c2f', sub:'rgba(43,38,32,.55)', ink:'#2b2620', cnt:'#a63c2f', meta:'rgba(43,38,32,.5)', foot:'rgba(43,38,32,.4)', qrPad:'#ffffff', qrDot:'#2b2620', name:'纸窗晨光' },
+  dark:  { bg:'#0c1424', glow:'rgba(233,200,124,.30)', title:'#e9c87c', sub:'rgba(240,232,216,.55)', ink:'#f0e8d8', cnt:'#e9c87c', meta:'rgba(240,232,216,.5)', foot:'rgba(240,232,216,.4)', qrPad:'#f0e8d8', qrDot:'#0c1424', name:'夜航书灯' },
+};
+let THEME = 'light';
+function applyTheme(t) {
+  THEME = t;
+  document.documentElement.dataset.theme = t;
+  $('#themebtn').textContent = t === 'dark' ? '☀' : '☾';
+  try { localStorage.setItem('yx-theme', t); } catch (e) {}
+}
+function toggleTheme() {
+  applyTheme(THEME === 'dark' ? 'light' : 'dark');
+  track('theme_toggle', { to: THEME });
+}
+
 /* ===== app ===== */
 const $ = s => document.querySelector(s);
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -2605,25 +2638,26 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines) {
 function drawCard(bk, item) {
   const cv = $('#jgpyCanvas'), ctx = cv.getContext('2d');
   const W = 750, H = 1000;
+  const T = THEMES[THEME] || THEMES.light;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#0c1424'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
   const g = ctx.createRadialGradient(W/2, 60, 20, W/2, 60, 480);
-  g.addColorStop(0, 'rgba(233,200,124,.30)'); g.addColorStop(1, 'rgba(233,200,124,0)');
+  g.addColorStop(0, T.glow); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#e9c87c'; ctx.font = '900 40px "Songti SC","Noto Serif SC",serif';
+  ctx.fillStyle = T.title; ctx.font = '900 40px "Songti SC","Noto Serif SC",serif';
   ctx.fillText('英雄所见', W/2, 120);
-  ctx.fillStyle = 'rgba(240,232,216,.55)'; ctx.font = '22px "Songti SC",serif';
+  ctx.fillStyle = T.sub; ctx.font = '22px "Songti SC",serif';
   ctx.fillText('万人划过的句子 · ' + bk.name, W/2, 162);
-  ctx.strokeStyle = 'rgba(233,200,124,.3)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = T.cnt + '55'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(W/2 - 130, 196); ctx.lineTo(W/2 + 130, 196); ctx.stroke();
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#f0e8d8'; ctx.font = '42px "Songti SC","Noto Serif SC",serif';
+  ctx.fillStyle = T.ink; ctx.font = '42px "Songti SC","Noto Serif SC",serif';
   const body = item.t.length > 126 ? item.t.slice(0, 124) + '……' : item.t;
   const used = wrapText(ctx, body, 64, 300, W - 128, 66, 7);
-  ctx.fillStyle = '#e9c87c'; ctx.font = '26px Georgia,serif';
+  ctx.fillStyle = T.cnt; ctx.font = '26px Georgia,serif';
   ctx.fillText(fmtN(item.n) + ' 人划过', 64, used + 46);
-  ctx.fillStyle = 'rgba(240,232,216,.5)'; ctx.font = '21px "Songti SC",serif';
+  ctx.fillStyle = T.meta; ctx.font = '21px "Songti SC",serif';
   const ed = bk.editions[0].label.split(' · ')[0];
   ctx.fillText(bk.name + ' · ' + ed + ' 译' + (item.c ? ' · ' + item.c : ''), 64, used + 90);
   const url = 'https://liyuankui.github.io/yingxiongsuojian/#' + bk.id;
@@ -2631,13 +2665,13 @@ function drawCard(bk, item) {
     const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
     const n = qr.getModuleCount(), cell = 5.4, pad = 2, size = n * cell + pad * 2;
     const qx = W - 64 - size, qy = H - 84 - size;
-    ctx.fillStyle = '#f0e8d8'; ctx.fillRect(qx - 10, qy - 10, size + 20, size + 20);
-    ctx.fillStyle = '#0c1424';
+    ctx.fillStyle = T.qrPad; ctx.fillRect(qx - 10, qy - 10, size + 20, size + 20);
+    ctx.fillStyle = T.qrDot;
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
       if (qr.isDark(r, c)) ctx.fillRect(qx + pad + c * cell, qy + pad + r * cell, cell, cell);
   } catch (e) {}
   ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(240,232,216,.4)'; ctx.font = '20px "Songti SC",serif';
+  ctx.fillStyle = T.foot; ctx.font = '20px "Songti SC",serif';
   ctx.fillText('yingxiongsuojian', W - 64, H - 52);
 }
 function openFeather(btn) {
@@ -2693,6 +2727,11 @@ function track(ev, props) {
   } catch (e) {}
 }
 
+(function () {
+  let t = 'light';
+  try { t = localStorage.getItem('yx-theme') || 'light'; } catch (e) {}
+  applyTheme(t);
+})();
 renderShelf();
 applyView(location.hash.replace('#', '') || 'shelf');
 window.addEventListener('hashchange', () => applyView(location.hash.replace('#', '') || 'shelf'));
